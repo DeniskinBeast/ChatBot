@@ -1,4 +1,6 @@
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 
@@ -7,6 +9,7 @@ public class ChatBot {
     private static String help = "Напиши свой ответ в следующей строке или введи \"-n\", чтобы пропустить вопрос. " +
             "Пока никаких фич у меня больше нет, простите";
 
+    private static Map<String, String> keys = initializeKeys();
     private static Question[] questions = {new Question("На озере расцвела одна лилия. " +
             "Каждый день число цветков удваивалось, и на двадцатый день все "
             + "\nозеро покрылось цветами. На какой день покрылась цветами "
@@ -27,16 +30,25 @@ public class ChatBot {
                             "зелёной"), 2)
     };
 
-    public static String Ask(UserCondition user)
+    private static Map<String, String> initializeKeys()
+    {
+        Map<String, String> keys = new HashMap<String, String>();
+        keys.put("-h", help);
+        keys.put( "-n", "Пропускаем этот вопрос");
+        return keys;
+    }
+
+    private static String Ask(UserCondition user)
     {
         int n = user.getQuestionNumber();
         return questions[n].question;
     }
 
-    public static String Check(UserCondition user, String answer, int questionNumber)
+    private static String Check(UserCondition user, String answer)
     {
         String output;
         int scores;
+        int questionNumber = user.getQuestionNumber();
         if (questions[questionNumber].answers.contains(answer))
         {
             output = "Правильный ответ!";
@@ -44,15 +56,19 @@ public class ChatBot {
             user.addScores(scores);
             user.moveToNextQuestion();
         }
-        else if (answer.equals("-h"))
-            output = help;
-        else if (answer.equals("-n"))
-        {
-            output = "Пропускаем этот вопрос";
-            user.moveToNextQuestion();
-        }
         else output = "Неправильный ответ";
         return output;
+    }
+
+    private static String analyzeInput(UserCondition user, String input)
+    {
+        if (keys.containsKey(input))
+        {
+            if (input.equals("-n"))
+                user.moveToNextQuestion();
+            return keys.get(input);
+        }
+        return Check(user, input);
     }
 
     public static void main(String[] args)
@@ -60,7 +76,7 @@ public class ChatBot {
         consoleRealisation();
     }
 
-    public static void consoleRealisation()
+    private static void consoleRealisation()
     {
         Scanner input = new Scanner(System.in);
         System.out.println("Введите своё имя");
@@ -72,13 +88,14 @@ public class ChatBot {
                 "\nо работе со мной через ключ \"-h\", готов?" +
                 "\nТогда вот первый вопрос:", userName));
         int length = questions.length;
-        while (user.getQuestionNumber() < length)
+        while (true)
         {
-            System.out.println(Ask(user));
-            String answer = input.nextLine().toLowerCase();
-            System.out.println(Check(user, answer, user.getQuestionNumber()));
+            if (user.getQuestionNumber() < length)
+                System.out.println(Ask(user));
+            else
+                System.out.println(String.format("Вы набрали %d очков, поздравляем!", user.getScore()));
+            System.out.println(analyzeInput(user, input.nextLine().toLowerCase()));
         }
-        System.out.println(String.format("Вы набрали %d очков, поздравляем!", user.getScore()));
     }
 
     /*public static void askAndCheck(UserCondition user, Scanner input)
